@@ -23,6 +23,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
         ])
     }
 
+    @available(iOS 15.0, *)
     @objc func fetchProducts(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
         call.resolve([
