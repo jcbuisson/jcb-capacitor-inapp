@@ -4,7 +4,7 @@ import StoreKit
 
 @objc public class InAppPurchase: NSObject {
 
-    public var myProduct: NSObject?
+    public var myProduct: Any?
 
     @objc public func echo(_ value: String) -> String {
         print(value)
@@ -16,9 +16,9 @@ import StoreKit
     @objc public func fetchProducts(_ value: String) -> String {
         async {
             do {
-                let products = try await Product.products(for: ["premium"])
+                myProduct = try await Product.products(for: ["premium"])
                 print("products")
-                print(products)
+                print(myProduct)
             }
             catch {
                 print(error)
@@ -29,8 +29,7 @@ import StoreKit
 
 
     @objc public func test(_ value: String) -> String {
-        print(value)
-        print("poiu")
+        print(myProduct)
         return value
     }
 
