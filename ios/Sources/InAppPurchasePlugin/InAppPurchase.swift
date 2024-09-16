@@ -50,4 +50,25 @@ import StoreKit
         return value
     }
 
+    public func refreshPurchasedProducts() async {
+        // Iterate through the user's purchased products.
+        if #available(iOS 15.0, *) {
+            for await verificationResult in Transaction.currentEntitlements {
+                switch verificationResult {
+                case .verified(let transaction):
+                    // Check the type of product for the transaction
+                    // and provide access to the content as appropriate.
+                    print("verified")
+                case .unverified(let unverifiedTransaction, let verificationError):
+                    // Handle unverified transactions based on your
+                    // business model.
+                    print("unverified")
+                }
+            }
+        } else {
+            // Fallback on earlier versions
+            print("needs iOS15")
+        }
+    }
+
 }
