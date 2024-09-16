@@ -9,6 +9,9 @@ import Capacitor
 public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "InAppPurchasePlugin"
     public let jsName = "InAppPurchase"
+
+    public var storedValue: Any = []
+
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "fetchProducts", returnType: CAPPluginReturnPromise),
@@ -31,6 +34,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
         ])
     }
 
+    @available(iOS 15.0, *)
     @objc func test(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
         call.resolve([
