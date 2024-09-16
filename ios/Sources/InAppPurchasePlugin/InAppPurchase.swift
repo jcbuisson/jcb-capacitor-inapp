@@ -15,7 +15,8 @@ import StoreKit
         async {
             do {
                 if #available(iOS 15.0, *) {
-                    let products = try await Product.products(for: ["premium"])
+                    // let products = try await Product.products(for: ["premium"])
+                    let products = try await Product.products(for: [value])
                     print("products")
                     print(products)
                 } else {
