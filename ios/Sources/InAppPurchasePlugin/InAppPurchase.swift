@@ -30,6 +30,12 @@ import StoreKit
     }
 
 
+    public func test(_ value: String) -> String {
+        print(value)
+        print("poiu")
+        return value
+    }
+
 
 
 

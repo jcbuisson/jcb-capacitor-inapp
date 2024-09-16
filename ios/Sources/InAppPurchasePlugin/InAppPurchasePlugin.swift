@@ -28,4 +28,11 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
             "value": implementation.fetchProducts(value)
         ])
     }
+
+    func test(_ call: CAPPluginCall) {
+        let value = call.getString("value") ?? ""
+        call.resolve([
+            "value": implementation.fetchProducts(value)
+        ])
+    }
 }
