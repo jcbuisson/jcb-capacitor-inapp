@@ -10,7 +10,8 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "InAppPurchasePlugin"
     public let jsName = "InAppPurchase"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "fetchProducts", returnType: CAPPluginReturnPromise),
     ]
     private let implementation = InAppPurchase()
 
@@ -18,6 +19,13 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
         let value = call.getString("value") ?? ""
         call.resolve([
             "value": implementation.echo(value)
+        ])
+    }
+
+    @objc func fetchProducts(_ call: CAPPluginCall) {
+        let value = call.getString("value") ?? ""
+        call.resolve([
+            "value": implementation.fetchProducts(value)
         ])
     }
 }
