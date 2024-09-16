@@ -12,6 +12,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "fetchProducts", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "test", returnType: CAPPluginReturnPromise),
     ]
     private let implementation = InAppPurchase()
 
@@ -29,10 +30,10 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
         ])
     }
 
-    func test(_ call: CAPPluginCall) {
+    @objc func test(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
         call.resolve([
-            "value": implementation.fetchProducts(value)
+            "value": implementation.test(value)
         ])
     }
 }
