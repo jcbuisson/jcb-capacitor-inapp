@@ -113,10 +113,8 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                             purchasedProductIDs.insert(transaction.productID)
                         } else {
                             print("Revoked product: \(transaction.productID)")
-                            purchasedProductIDs.remove(transaction.productID)
+                            // purchasedProductIDs.remove(transaction.productID)
                         }
-                        // print("Restored product: \(transaction.productID)")
-                        // purchasedProductIDs.insert(transaction.productID)
                     case .unverified(let unverifiedTransaction, let verificationError):
                         // Handle unverified transactions based on your business model.
                         print("unverified")
