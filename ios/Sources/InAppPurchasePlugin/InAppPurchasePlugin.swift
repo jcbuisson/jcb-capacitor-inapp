@@ -41,14 +41,33 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
         Task {
             do {
                 let products = try await Product.products(for: ["premium"])
-
-                // Return the result to JavaScript using resolve
-                // call.resolve([
-                //     "data": products
-                // ])
                 if (products.count == 1) {
                     let product = products.first!
                     print("prod", product.description, product.price, product)
+
+                    let result = try await product.purchase()
+                    switch result {
+                    case let .success(.verified(transaction)):
+                        // Successful purhcase
+                        await transaction.finish()
+                    case let .success(.unverified(_, error)):
+                        // Successful purchase but transaction/receipt can't be verified
+                        // Could be a jailbroken phone
+                        print("Unverified purchase. Might be jailbroken. Error: \(error)")
+                        break
+                    case .pending:
+                        // Transaction waiting on SCA (Strong Customer Authentication) or
+                        // approval from Ask to Buy
+                        break
+                    case .userCancelled:
+                        // ^^^
+                        print("User Cancelled!")
+                        break
+                    @unknown default:
+                        print("Failed to purchase the product!")
+                        break
+                    }
+
                     call.resolve([
                         "productId": product.id,
                         "displayPrice": product.displayPrice,
