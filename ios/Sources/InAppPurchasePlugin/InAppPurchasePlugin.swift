@@ -108,13 +108,22 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                     switch verificationResult {
                     case .verified(let transaction):
                         // Check the type of product for the transaction and provide access to the content as appropriate.
-                        print("Restored product: \(transaction.productID)")
-                        purchasedProductIDs.insert(transaction.productID)
+                        if transaction.revocationDate == nil {
+                            print("Restored product: \(transaction.productID)")
+                            purchasedProductIDs.insert(transaction.productID)
+                        } else {
+                            print("Revoked product: \(transaction.productID)")
+                            purchasedProductIDs.remove(transaction.productID)
+                        }
+                        // print("Restored product: \(transaction.productID)")
+                        // purchasedProductIDs.insert(transaction.productID)
                     case .unverified(let unverifiedTransaction, let verificationError):
                         // Handle unverified transactions based on your business model.
                         print("unverified")
                     }
                 }
+
+
                 let arrayOfStrings = Array(purchasedProductIDs)
                 let jsonData = try JSONEncoder().encode(arrayOfStrings)
                 let jsonString = String(data: jsonData, encoding: .utf8)
