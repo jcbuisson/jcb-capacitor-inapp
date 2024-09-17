@@ -102,24 +102,29 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func getPurchases(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
         Task {
+            var purchasedProductIDs: Set<String> = []
             do {
                 for await verificationResult in Transaction.currentEntitlements {
                     switch verificationResult {
                     case .verified(let transaction):
                         // Check the type of product for the transaction and provide access to the content as appropriate.
                         print("Restored product: \(transaction.productID)")
+                        purchasedProductIDs.insert(transaction.productID)
                     case .unverified(let unverifiedTransaction, let verificationError):
                         // Handle unverified transactions based on your business model.
                         print("unverified")
                     }
                 }
+                let arrayOfStrings = Array(purchasedProductIDs)
+                let jsonData = try JSONEncoder().encode(arrayOfStrings)
+                let jsonString = String(data: jsonData, encoding: .utf8)
+                call.resolve([
+                    "value": jsonString
+                ])
             } catch {
                 call.reject("Failed currentEntitlements", error.localizedDescription)
             }
         }
-        call.resolve([
-            "value": "ok"
-        ])
     }
 
     @objc func test(_ call: CAPPluginCall) {
