@@ -11,11 +11,12 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "InAppPurchasePlugin"
     public let jsName = "InAppPurchase"
 
-    public var storedValue: Any = []
+    public var storedValue: Any = [] // JCB
 
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "buyProduct", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getPurchases", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "test", returnType: CAPPluginReturnPromise),
     ]
     private let implementation = InAppPurchase()
@@ -38,26 +39,49 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                     print("prod", product.description, product.price, product)
 
                     let result = try await product.purchase()
+
+                    // switch result {
+                    // case let .success(.verified(transaction)):
+                    //     // Successful purhcase
+                    //     print("Purchase successful for product: \(transaction.productID)")
+                    //     await transaction.finish()
+                    // case let .success(.unverified(_, error)):
+                    //     // Successful purchase but transaction/receipt can't be verified. Could be a jailbroken phone
+                    //     print("Unverified purchase. Might be jailbroken. Error: \(error)")
+                    //     break
+                    // case .pending:
+                    //     // Transaction waiting on SCA (Strong Customer Authentication) or approval from Ask to Buy
+                    //     break
+                    // case .userCancelled:
+                    //     print("User Cancelled!")
+                    //     break
+                    // @unknown default:
+                    //     print("Failed to purchase the product!")
+                    //     break
+                    // }
+
                     switch result {
-                    case let .success(.verified(transaction)):
-                        // Successful purhcase
-                        await transaction.finish()
-                    case let .success(.unverified(_, error)):
-                        // Successful purchase but transaction/receipt can't be verified
-                        // Could be a jailbroken phone
-                        print("Unverified purchase. Might be jailbroken. Error: \(error)")
-                        break
-                    case .pending:
-                        // Transaction waiting on SCA (Strong Customer Authentication) or
-                        // approval from Ask to Buy
-                        break
+                    case .success(let verification):
+                        // Check if the transaction is verified
+                        switch verification {
+                        case .verified(let transaction):
+                            print("Purchase successful for product: \(transaction.productID)")
+                            
+                            // Store product ID in purchased list
+                            // purchasedProductIDs.insert(transaction.productID)
+                            
+                            // Finish the transaction
+                            await transaction.finish()
+                            
+                        case .unverified(_, let error):
+                            print("Unverified transaction: \(error.localizedDescription)")
+                        }
+                        
                     case .userCancelled:
-                        // ^^^
-                        print("User Cancelled!")
-                        break
-                    @unknown default:
-                        print("Failed to purchase the product!")
-                        break
+                        print("User cancelled the purchase.")
+                        
+                    case .pending:
+                        print("Purchase is pending.")
                     }
 
                     call.resolve([
@@ -74,10 +98,35 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
+    @available(iOS 15.0, *)
+    @objc func getPurchases(_ call: CAPPluginCall) {
+        let value = call.getString("value") ?? ""
+        Task {
+            do {
+                for await verificationResult in Transaction.currentEntitlements {
+                    switch verificationResult {
+                    case .verified(let transaction):
+                        // Check the type of product for the transaction and provide access to the content as appropriate.
+                        print("Restored product: \(transaction.productID)")
+                    case .unverified(let unverifiedTransaction, let verificationError):
+                        // Handle unverified transactions based on your business model.
+                        print("unverified")
+                    }
+                }
+            } catch {
+                call.reject("Failed currentEntitlements", error.localizedDescription)
+            }
+        }
+        call.resolve([
+            "value": "ok"
+        ])
+    }
+
     @objc func test(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
         call.resolve([
-            "value": implementation.test(value)
+            "value": implementation.echo(value)
         ])
     }
+
 }
