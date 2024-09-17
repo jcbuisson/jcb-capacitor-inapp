@@ -40,26 +40,6 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
 
                     let result = try await product.purchase()
 
-                    // switch result {
-                    // case let .success(.verified(transaction)):
-                    //     // Successful purhcase
-                    //     print("Purchase successful for product: \(transaction.productID)")
-                    //     await transaction.finish()
-                    // case let .success(.unverified(_, error)):
-                    //     // Successful purchase but transaction/receipt can't be verified. Could be a jailbroken phone
-                    //     print("Unverified purchase. Might be jailbroken. Error: \(error)")
-                    //     break
-                    // case .pending:
-                    //     // Transaction waiting on SCA (Strong Customer Authentication) or approval from Ask to Buy
-                    //     break
-                    // case .userCancelled:
-                    //     print("User Cancelled!")
-                    //     break
-                    // @unknown default:
-                    //     print("Failed to purchase the product!")
-                    //     break
-                    // }
-
                     switch result {
                     case .success(let verification):
                         // Check if the transaction is verified
@@ -107,14 +87,29 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                 for await verificationResult in Transaction.currentEntitlements {
                     switch verificationResult {
                     case .verified(let transaction):
-                        // Check the type of product for the transaction and provide access to the content as appropriate.
-                        if transaction.revocationDate == nil {
-                            print("Restored product: \(transaction.productID)")
-                            purchasedProductIDs.insert(transaction.productID)
+                        // // Check the type of product for the transaction and provide access to the content as appropriate.
+                        // if transaction.revocationDate == nil {
+                        //     print("Restored product: \(transaction.productID)")
+                        //     purchasedProductIDs.insert(transaction.productID)
+                        // } else {
+                        //     print("Revoked product: \(transaction.productID)")
+                        //     // purchasedProductIDs.remove(transaction.productID)
+                        // }
+
+                        if transaction.revocationDate != nil {
+                            print("Subscription was revoked on \(String(describing: transaction.revocationDate)).")
+                            // Handle revoked subscription (canceled or refunded by Apple)
+                        } else if let expirationDate = transaction.expirationDate {
+                            if expirationDate < Date() {
+                                print("Subscription has expired on \(expirationDate).")
+                            } else {
+                                print("Subscription is still active, expires on \(expirationDate).")
+                                purchasedProductIDs.insert(transaction.productID)
+                            }
                         } else {
-                            print("Revoked product: \(transaction.productID)")
-                            // purchasedProductIDs.remove(transaction.productID)
+                            print("No expiration date. The subscription is active with no known expiration.")
                         }
+
                     case .unverified(let unverifiedTransaction, let verificationError):
                         // Handle unverified transactions based on your business model.
                         print("unverified")
@@ -133,6 +128,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
     }
+
 
     @objc func test(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
