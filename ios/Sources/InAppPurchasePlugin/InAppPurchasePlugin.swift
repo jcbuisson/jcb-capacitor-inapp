@@ -29,9 +29,9 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
 
     @available(iOS 15.0, *)
     @objc func buyProduct(_ call: CAPPluginCall) {
-        let value = call.getString("value") ?? ""
+        let productId = call.getString("productId") ?? ""
         call.resolve([
-            "value": implementation.buyProduct(value)
+            "value": implementation.buyProduct(productId)
         ])
     }
 

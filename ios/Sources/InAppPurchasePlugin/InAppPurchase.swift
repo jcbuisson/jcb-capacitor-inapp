@@ -11,10 +11,10 @@ import StoreKit
     }
 
     @available(iOS 15.0, *)
-    @objc public func buyProduct(_ value: String) -> String {
+    @objc public func buyProduct(_ productId: String) -> String {
         async {
             do {
-                let products = try await Product.products(for: ["premium"])
+                let products = try await Product.products(for: [productId])
                 print("products")
                 print(products)
             }
