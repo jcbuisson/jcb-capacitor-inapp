@@ -30,17 +30,9 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     @available(iOS 15.0, *)
     @objc func buyProduct(_ call: CAPPluginCall) {
         let productId = call.getString("productId") ?? ""
-        call.resolve([
-            "value": implementation.buyProduct(productId)
-        ])
-    }
-
-    @available(iOS 15.0, *)
-    @objc func test(_ call: CAPPluginCall) {
-        let value = call.getString("value") ?? ""
         Task {
             do {
-                let products = try await Product.products(for: ["premium"])
+                let products = try await Product.products(for: [productId])
                 if (products.count == 1) {
                     let product = products.first!
                     print("prod", product.description, product.price, product)
@@ -80,5 +72,12 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("Failed", error.localizedDescription)
             }
         }
+    }
+
+    @objc func test(_ call: CAPPluginCall) {
+        let value = call.getString("value") ?? ""
+        call.resolve([
+            "value": implementation.test(value)
+        ])
     }
 }
