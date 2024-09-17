@@ -11,7 +11,7 @@ import StoreKit
     }
 
     @available(iOS 15.0, *)
-    @objc public func fetchProducts(_ value: String) -> String {
+    @objc public func buyProduct(_ value: String) -> String {
         async {
             do {
                 let products = try await Product.products(for: ["premium"])
