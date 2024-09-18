@@ -19,7 +19,6 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "getPurchases", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "test", returnType: CAPPluginReturnPromise),
     ]
-    private let implementation = InAppPurchase()
 
     @objc func echo(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
