@@ -23,8 +23,10 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func echo(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
+        print(value)
+        print("eee")
         call.resolve([
-            "value": implementation.echo(value)
+            "value": value
         ])
     }
 
@@ -46,10 +48,6 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                         switch verification {
                         case .verified(let transaction):
                             print("Purchase successful for product: \(transaction.productID)")
-                            
-                            // Store product ID in purchased list
-                            // purchasedProductIDs.insert(transaction.productID)
-                            
                             // Finish the transaction
                             await transaction.finish()
                             
@@ -82,42 +80,32 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func getPurchases(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
         Task {
-            var purchasedProductIDs: Set<String> = []
+            var activeProductIDs: Set<String> = []
             do {
                 for await verificationResult in Transaction.currentEntitlements {
                     switch verificationResult {
                     case .verified(let transaction):
-                        // // Check the type of product for the transaction and provide access to the content as appropriate.
-                        // if transaction.revocationDate == nil {
-                        //     print("Restored product: \(transaction.productID)")
-                        //     purchasedProductIDs.insert(transaction.productID)
-                        // } else {
-                        //     print("Revoked product: \(transaction.productID)")
-                        //     // purchasedProductIDs.remove(transaction.productID)
-                        // }
-
                         if transaction.revocationDate != nil {
+                            // subscription canceled or refunded by Apple
                             print("Subscription was revoked on \(String(describing: transaction.revocationDate)).")
-                            // Handle revoked subscription (canceled or refunded by Apple)
                         } else if let expirationDate = transaction.expirationDate {
                             if expirationDate < Date() {
                                 print("Subscription has expired on \(expirationDate).")
                             } else {
                                 print("Subscription is still active, expires on \(expirationDate).")
-                                purchasedProductIDs.insert(transaction.productID)
+                                activeProductIDs.insert(transaction.productID)
                             }
                         } else {
                             print("No expiration date. The subscription is active with no known expiration.")
                         }
 
                     case .unverified(let unverifiedTransaction, let verificationError):
-                        // Handle unverified transactions based on your business model.
+                        // jailbroken phone?
                         print("unverified")
                     }
                 }
 
-
-                let arrayOfStrings = Array(purchasedProductIDs)
+                let arrayOfStrings = Array(activeProductIDs)
                 let jsonData = try JSONEncoder().encode(arrayOfStrings)
                 let jsonString = String(data: jsonData, encoding: .utf8)
                 call.resolve([
