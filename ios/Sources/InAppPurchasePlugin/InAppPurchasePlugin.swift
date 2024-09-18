@@ -119,8 +119,10 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func test(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
+        print(value)
+        print("ttt")
         call.resolve([
-            "value": implementation.echo(value)
+            "value": value
         ])
     }
 
