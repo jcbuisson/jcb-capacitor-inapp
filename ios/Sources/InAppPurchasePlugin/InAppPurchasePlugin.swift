@@ -40,6 +40,9 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                     print("prod", product.description, product.price, product)
 
                     let result = try await product.purchase()
+                    var revocationDate: Date? = nil
+                    var expirationDate: Date? = nil
+                    var active: Bool? = nil
 
                     switch result {
                     case .success(let verification):
@@ -47,6 +50,25 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                         switch verification {
                         case .verified(let transaction):
                             print("Purchase successful for product: \(transaction.productID)")
+
+
+                            revocationDate = transaction.revocationDate
+                            expirationDate = transaction.expirationDate
+                            if transaction.revocationDate != nil {
+                                // subscription canceled or refunded by Apple
+                                print("Subscription was revoked on \(String(describing: transaction.revocationDate)).")
+                            } else if let expirationDate = transaction.expirationDate {
+                                if expirationDate < Date() {
+                                    print("Subscription has expired on \(expirationDate).")
+                                } else {
+                                    print("Subscription is still active, expires on \(expirationDate).")
+                                    active = true
+                                }
+                            } else {
+                                print("No expiration date. The subscription is active with no known expiration.")
+                            }
+
+
                             // Finish the transaction
                             await transaction.finish()
                             
@@ -62,9 +84,13 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                     }
 
                     call.resolve([
-                        "productId": product.id,
-                        "displayPrice": product.displayPrice,
-                        "description": product.description,
+                        // "productId": product.id,
+                        // "displayPrice": product.displayPrice,
+                        // "description": product.description,
+                        "productId": productId,
+                        "revocationDate": revocationDate,
+                        "expirationDate": expirationDate,
+                        "active": active,
                     ])
                 } else {
                     call.reject("NotFound", "product not found")
