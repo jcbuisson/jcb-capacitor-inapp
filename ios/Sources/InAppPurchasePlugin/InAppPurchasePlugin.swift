@@ -119,11 +119,10 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     @available(iOS 15.0, *)
     @objc func checkSubscription(_ call: CAPPluginCall) {
         Task {
-            // var activeProductIDs: Set<String> = []
             var productId: String? = nil
             var revocationDate: Date? = nil
             var expirationDate: Date? = nil
-            var active: Bool = false
+            var active: Bool? = nil
             do {
                 for await verificationResult in Transaction.currentEntitlements {
                     switch verificationResult {
