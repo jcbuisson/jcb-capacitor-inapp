@@ -1,6 +1,6 @@
 {
   "name": "jcb-capacitor-inapp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Capacitor plugin for inApp purchase",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",

@@ -14,6 +14,9 @@ npx cap sync
 <docgen-index>
 
 * [`echo(...)`](#echo)
+* [`buyProduct(...)`](#buyproduct)
+* [`getPurchases(...)`](#getpurchases)
+* [`test(...)`](#test)
 
 </docgen-index>
 
@@ -24,6 +27,51 @@ npx cap sync
 
 ```typescript
 echo(options: { value: string; }) => Promise<{ value: string; }>
+```
+
+| Param         | Type                            |
+| ------------- | ------------------------------- |
+| **`options`** | <code>{ value: string; }</code> |
+
+**Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
+
+--------------------
+
+
+### buyProduct(...)
+
+```typescript
+buyProduct(options: { productId: string; }) => Promise<{ value: string; }>
+```
+
+| Param         | Type                                |
+| ------------- | ----------------------------------- |
+| **`options`** | <code>{ productId: string; }</code> |
+
+**Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
+
+--------------------
+
+
+### getPurchases(...)
+
+```typescript
+getPurchases(options: { value: string; }) => Promise<{ value: string; }>
+```
+
+| Param         | Type                            |
+| ------------- | ------------------------------- |
+| **`options`** | <code>{ value: string; }</code> |
+
+**Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
+
+--------------------
+
+
+### test(...)
+
+```typescript
+test(options: { value: string; }) => Promise<{ value: string; }>
 ```
 
 | Param         | Type                            |
