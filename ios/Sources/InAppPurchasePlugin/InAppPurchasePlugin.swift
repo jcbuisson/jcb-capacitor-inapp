@@ -16,7 +16,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "buyProduct", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "getPurchases", returnType: CAPPluginReturnPromise),
+        // CAPPluginMethod(name: "getPurchases", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "checkSubscription", returnType: CAPPluginReturnPromise),
     ]
 
@@ -42,7 +42,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                     let result = try await product.purchase()
                     var revocationDate: Date? = nil
                     var expirationDate: Date? = nil
-                    var active: Bool? = nil
+                    var status: String? = nil
 
                     switch result {
                     case .success(let verification):
@@ -51,46 +51,43 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                         case .verified(let transaction):
                             print("Purchase successful for product: \(transaction.productID)")
 
-
-                            revocationDate = transaction.revocationDate
-                            expirationDate = transaction.expirationDate
                             if transaction.revocationDate != nil {
                                 // subscription canceled or refunded by Apple
                                 print("Subscription was revoked on \(String(describing: transaction.revocationDate)).")
+                                status = "revoked"
                             } else if let expirationDate = transaction.expirationDate {
                                 if expirationDate < Date() {
                                     print("Subscription has expired on \(expirationDate).")
+                                    status = "expired"
                                 } else {
                                     print("Subscription is still active, expires on \(expirationDate).")
-                                    active = true
+                                    status = "active"
                                 }
                             } else {
                                 print("No expiration date. The subscription is active with no known expiration.")
+                                status = "active"
                             }
-
 
                             // Finish the transaction
                             await transaction.finish()
                             
                         case .unverified(_, let error):
                             print("Unverified transaction: \(error.localizedDescription)")
+                            status = "unverified"
                         }
                         
                     case .userCancelled:
-                        print("User cancelled the purchase.")
+                        print("User canceled the purchase.")
+                        status = "canceled"
                         
                     case .pending:
                         print("Purchase is pending.")
+                        status = "pending"
                     }
 
                     call.resolve([
-                        // "productId": product.id,
-                        // "displayPrice": product.displayPrice,
-                        // "description": product.description,
                         "productId": productId,
-                        "revocationDate": revocationDate,
-                        "expirationDate": expirationDate,
-                        "active": active,
+                        "status": status,
                     ])
                 } else {
                     call.reject("NotFound", "product not found")
@@ -101,45 +98,45 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    @available(iOS 15.0, *)
-    @objc func getPurchases(_ call: CAPPluginCall) {
-        Task {
-            var activeProductIDs: Set<String> = []
-            do {
-                for await verificationResult in Transaction.currentEntitlements {
-                    switch verificationResult {
-                    case .verified(let transaction):
-                        if transaction.revocationDate != nil {
-                            // subscription canceled or refunded by Apple
-                            print("Subscription was revoked on \(String(describing: transaction.revocationDate)).")
-                        } else if let expirationDate = transaction.expirationDate {
-                            if expirationDate < Date() {
-                                print("Subscription has expired on \(expirationDate).")
-                            } else {
-                                print("Subscription is still active, expires on \(expirationDate).")
-                                activeProductIDs.insert(transaction.productID)
-                            }
-                        } else {
-                            print("No expiration date. The subscription is active with no known expiration.")
-                        }
+    // @available(iOS 15.0, *)
+    // @objc func getPurchases(_ call: CAPPluginCall) {
+    //     Task {
+    //         var activeProductIDs: Set<String> = []
+    //         do {
+    //             for await verificationResult in Transaction.currentEntitlements {
+    //                 switch verificationResult {
+    //                 case .verified(let transaction):
+    //                     if transaction.revocationDate != nil {
+    //                         // subscription canceled or refunded by Apple
+    //                         print("Subscription was revoked on \(String(describing: transaction.revocationDate)).")
+    //                     } else if let expirationDate = transaction.expirationDate {
+    //                         if expirationDate < Date() {
+    //                             print("Subscription has expired on \(expirationDate).")
+    //                         } else {
+    //                             print("Subscription is still active, expires on \(expirationDate).")
+    //                             activeProductIDs.insert(transaction.productID)
+    //                         }
+    //                     } else {
+    //                         print("No expiration date. The subscription is active with no known expiration.")
+    //                     }
 
-                    case .unverified(let unverifiedTransaction, let verificationError):
-                        // jailbroken phone?
-                        print("unverified")
-                    }
-                }
+    //                 case .unverified(let unverifiedTransaction, let verificationError):
+    //                     // jailbroken phone?
+    //                     print("unverified")
+    //                 }
+    //             }
 
-                let arrayOfStrings = Array(activeProductIDs)
-                let jsonData = try JSONEncoder().encode(arrayOfStrings)
-                let jsonString = String(data: jsonData, encoding: .utf8)
-                call.resolve([
-                    "value": jsonString
-                ])
-            } catch {
-                call.reject("Failed currentEntitlements", error.localizedDescription)
-            }
-        }
-    }
+    //             let arrayOfStrings = Array(activeProductIDs)
+    //             let jsonData = try JSONEncoder().encode(arrayOfStrings)
+    //             let jsonString = String(data: jsonData, encoding: .utf8)
+    //             call.resolve([
+    //                 "value": jsonString
+    //             ])
+    //         } catch {
+    //             call.reject("Failed currentEntitlements", error.localizedDescription)
+    //         }
+    //     }
+    // }
 
 
     @available(iOS 15.0, *)
@@ -148,39 +145,39 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
             var productId: String? = nil
             var revocationDate: Date? = nil
             var expirationDate: Date? = nil
-            var active: Bool? = nil
+                    var status: String? = nil
             do {
                 for await verificationResult in Transaction.currentEntitlements {
                     switch verificationResult {
                     case .verified(let transaction):
                         productId = transaction.productID
-                        revocationDate = transaction.revocationDate
-                        expirationDate = transaction.expirationDate
                         if transaction.revocationDate != nil {
                             // subscription canceled or refunded by Apple
                             print("Subscription was revoked on \(String(describing: transaction.revocationDate)).")
+                            status = "canceled"
                         } else if let expirationDate = transaction.expirationDate {
                             if expirationDate < Date() {
                                 print("Subscription has expired on \(expirationDate).")
+                                status = "expired"
                             } else {
                                 print("Subscription is still active, expires on \(expirationDate).")
-                                active = true
+                                status = "active"
                             }
                         } else {
                             print("No expiration date. The subscription is active with no known expiration.")
+                            status = "active"
                         }
 
                     case .unverified(let unverifiedTransaction, let verificationError):
                         // jailbroken phone?
                         print("unverified")
+                        status = "unverified"
                     }
                 }
 
                 call.resolve([
                     "productId": productId,
-                    "revocationDate": revocationDate,
-                    "expirationDate": expirationDate,
-                    "active": active,
+                    "status": status,
                 ])
             } catch {
                 call.reject("Failed currentEntitlements", error.localizedDescription)
