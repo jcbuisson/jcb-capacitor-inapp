@@ -23,9 +23,11 @@ export class InAppPurchaseWeb extends WebPlugin implements InAppPurchasePlugin {
       }
    }
 
-   async checkSubscription(options: { value: string }): Promise<{ value: string }> {
-      console.log('CHECK SUBSCRIPTION', options)
-      return options
+   async checkSubscription(): Promise<{ value: string }> {
+      console.log('CHECK SUBSCRIPTION')
+      return {
+         value: "ok"
+      }
    }
 
 }

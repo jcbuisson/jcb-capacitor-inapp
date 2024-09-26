@@ -15,8 +15,7 @@ npx cap sync
 
 * [`echo(...)`](#echo)
 * [`buyProduct(...)`](#buyproduct)
-* [`getPurchases(...)`](#getpurchases)
-* [`checkSubscription(...)`](#checksubscription)
+* [`checkSubscription()`](#checksubscription)
 
 </docgen-index>
 
@@ -53,30 +52,11 @@ buyProduct(options: { productId: string; }) => Promise<{ value: string; }>
 --------------------
 
 
-### getPurchases(...)
+### checkSubscription()
 
 ```typescript
-getPurchases(options: { value: string; }) => Promise<{ value: string; }>
+checkSubscription() => Promise<{ value: string; }>
 ```
-
-| Param         | Type                            |
-| ------------- | ------------------------------- |
-| **`options`** | <code>{ value: string; }</code> |
-
-**Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
-
---------------------
-
-
-### checkSubscription(...)
-
-```typescript
-checkSubscription(options: { value: string; }) => Promise<{ value: string; }>
-```
-
-| Param         | Type                            |
-| ------------- | ------------------------------- |
-| **`options`** | <code>{ value: string; }</code> |
 
 **Returns:** <code>Promise&lt;{ value: string; }&gt;</code>
 
