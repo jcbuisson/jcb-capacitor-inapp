@@ -1,6 +1,6 @@
 {
   "name": "jcb-capacitor-inapp",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Capacitor plugin for inApp purchase",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
@@ -40,7 +40,7 @@
     "prettier": "prettier \"**/*.{css,html,ts,js,java}\"",
     "swiftlint": "node-swiftlint",
     "docgen": "docgen --api InAppPurchasePlugin --output-readme README.md --output-json dist/docs.json",
-    "build": "npm run clean && npm run docgen && tsc && rollup -c rollup.config.js",
+    "build": "npm run clean && tsc && rollup -c rollup.config.js",
     "clean": "rimraf ./dist",
     "watch": "tsc --watch",
     "prepublishOnly": "npm run build"
