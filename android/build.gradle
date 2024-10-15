@@ -55,4 +55,7 @@ dependencies {
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+
+    def billing_version = "7.0.0"
+    implementation "com.android.billingclient:billing:$billing_version"
 }
