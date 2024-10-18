@@ -12,7 +12,7 @@ npm run build
 npm publish
 ```
 
-## Install in capacitor web application
+## Utilisation dans une application Capacitor (webapp, app iOS, app Android)
 ```bash
 npm install jcb-capacitor-inapp
 npx cap sync

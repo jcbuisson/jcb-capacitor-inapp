@@ -9,8 +9,8 @@ export class InAppPurchaseWeb extends WebPlugin implements InAppPurchasePlugin {
       return options
    }
 
-   async buyProduct(options: { productId: string }): Promise<{ value: string }> {
-      console.log('BUYPRODUCT', options)
+   async buySubscription(options: { productId: string }): Promise<{ value: string }> {
+      console.log('buySubscription', options)
       return {
          value: "ok"
       }

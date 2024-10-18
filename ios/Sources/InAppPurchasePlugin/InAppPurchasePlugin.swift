@@ -15,7 +15,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
 
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "buyProduct", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "buySubscription", returnType: CAPPluginReturnPromise),
         // CAPPluginMethod(name: "getPurchases", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "checkSubscription", returnType: CAPPluginReturnPromise),
     ]
@@ -23,14 +23,13 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func echo(_ call: CAPPluginCall) {
         let value = call.getString("value") ?? ""
         print(value)
-        print("eee")
         call.resolve([
             "value": value
         ])
     }
 
     @available(iOS 15.0, *)
-    @objc func buyProduct(_ call: CAPPluginCall) {
+    @objc func buySubscription(_ call: CAPPluginCall) {
         let productId = call.getString("productId") ?? ""
         Task {
             do {
@@ -104,7 +103,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
             var productId: String? = nil
             var revocationDate: Date? = nil
             var expirationDate: Date? = nil
-                    var status: String? = nil
+            var status: String? = nil
             do {
                 for await verificationResult in Transaction.currentEntitlements {
                     switch verificationResult {
