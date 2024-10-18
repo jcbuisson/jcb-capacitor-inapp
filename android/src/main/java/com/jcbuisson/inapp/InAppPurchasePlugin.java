@@ -13,25 +13,52 @@ import android.util.Log;
 import com.android.billingclient.api.*;
 import com.android.billingclient.api.BillingFlowParams.*;
 
-// import com.google.common.collect.ImmutableList;
-
 import java.util.*;
 
 
+//////////          PLUGIN INTERFACE          //////////
+
 @CapacitorPlugin(name = "InAppPurchase")
 public class InAppPurchasePlugin extends Plugin {
+
+    @Override
+    public void load() {
+        super.load();
+        initializeBillingClient();
+    }
+
+    @PluginMethod
+    public void echo(PluginCall call) {
+        String value = call.getString("value");
+
+        JSObject ret = new JSObject();
+        ret.put("value", value);
+        call.resolve(ret);
+
+    }
+    
+    // Query products for purchase
+    @PluginMethod
+    public void checkSubscription(PluginCall call) {
+        Log.d(TAG, "checkSubscription...");
+        queryActiveSubscriptions(call);
+    }
+    
+    // Launch purchase flow
+    @PluginMethod
+    public void buySubscription(PluginCall call) {
+        String productId = call.getString("productId");
+        queryAndBuySubscription(productId, call);
+    }
+
+    //////////          IMPLEMENTATION          //////////
 
     private BillingClient billingClient;
     
     private static final String TAG = "Capacitor";  // Define a tag for logging
 
-    @Override
-    public void load() {
-        super.load();
-
+    private void initializeBillingClient() {
         Log.d(TAG, "Initializing BillingClient...");
-
-        // Initialize BillingClient
         billingClient = BillingClient.newBuilder(getContext())
             .enablePendingPurchases()
             .setListener(new PurchasesUpdatedListener() {
@@ -102,22 +129,11 @@ public class InAppPurchasePlugin extends Plugin {
         notifyListeners("purchaseError", ret);
     }
 
-    @PluginMethod
-    public void echo(PluginCall call) {
-        String value = call.getString("value");
-
-        JSObject ret = new JSObject();
-        ret.put("value", value);
-        call.resolve(ret);
-
-    }
-
-    private void queryActiveSubscriptions() {
+    private void queryActiveSubscriptions(PluginCall call) {
         billingClient.queryPurchasesAsync(BillingClient.ProductType.SUBS, new PurchasesResponseListener() {
             @Override
             public void onQueryPurchasesResponse(BillingResult billingResult, List<Purchase> purchases) {
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
-                    Log.d(TAG, "GOOD");
                     // Iterate through the list of purchases (active subscriptions)
                     Log.d(TAG, "purchases " + purchases.toString());
                     for (Purchase purchase : purchases) {
@@ -167,19 +183,9 @@ public class InAppPurchasePlugin extends Plugin {
             }
         });
     }
-    
-    // Query products for purchase
-    @PluginMethod
-    public void checkSubscription(PluginCall call) {
-        Log.d(TAG, "checkSubscription...");
-        queryActiveSubscriptions();
-    }
-    
-    // Launch purchase flow
-    @PluginMethod
-    public void buySubscription(PluginCall call) {
-        String productId = call.getString("productId");
-        Log.d(TAG, "buySubscription called with productId: " + productId);
+
+    private BillingResult queryAndBuySubscription(String productId, PluginCall call) {
+        Log.d(TAG, "queryAndBuySubscription called with productId: " + productId);
 
         List<QueryProductDetailsParams.Product> productList = new ArrayList<>();
         productList.add(QueryProductDetailsParams.Product.newBuilder()
@@ -203,12 +209,6 @@ public class InAppPurchasePlugin extends Plugin {
                 ProductDetails.SubscriptionOfferDetails selectedOffer = subscriptionOfferDetailsList.get(0);
                 Log.d(TAG, "selectedOffer = " + selectedOffer.toString());
 
-                // ImmutableList<ProductDetailsParams> productDetailsParamsList = ImmutableList.of(
-                //     ProductDetailsParams.newBuilder()
-                //         .setProductDetails(productDetails)
-                //         .setOfferToken(selectedOffer.getOfferToken())
-                //         .build()
-                // );
                 List<ProductDetailsParams> productDetailsParamsList = List.of(
                     ProductDetailsParams.newBuilder()
                         .setProductDetails(productDetails)
@@ -222,13 +222,17 @@ public class InAppPurchasePlugin extends Plugin {
                 
                 // Launch the billing flow
                 BillingResult result = billingClient.launchBillingFlow(getActivity(), billingFlowParams);
-
+                JSObject ret = new JSObject();
+                ret.put("productId", productId);
+                ret.put("status", "active");
+                call.resolve(ret);
+    
                 Log.d(TAG, "Purchase flow launched with result code: " + result.getResponseCode());
             } else {
                 Log.e(TAG, "Failed to start purchase flow: " + billingResult.getDebugMessage());
-                call.reject("Failed to start purchase flow");
             }
         });
+        return null;
     }
 
 }
