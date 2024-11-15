@@ -34,9 +34,22 @@ public class InAppPurchasePlugin extends Plugin {
         JSObject ret = new JSObject();
         ret.put("value", value);
         call.resolve(ret);
-
     }
-    
+        
+    @PluginMethod
+    public void isBillingReady(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("value", isBillingReady_);
+        call.resolve(ret);
+    }
+        
+    // Get info from a subscription (price, etc.)
+    @PluginMethod
+    public void getSubscriptionProductInfo(PluginCall call) {
+        String productId = call.getString("productId");
+        querySubscriptionInfo(productId, call);
+    }
+
     // Query products for purchase
     @PluginMethod
     public void checkSubscription(PluginCall call) {
@@ -54,38 +67,72 @@ public class InAppPurchasePlugin extends Plugin {
     //////////          IMPLEMENTATION          //////////
 
     private BillingClient billingClient;
+    private MyPurchasesUpdatedListener purchaseListener;
+    private boolean isBillingReady_ = false;
     
     private static final String TAG = "Capacitor";  // Define a tag for logging
 
+    // this listener sends back purchase results through `call` parameter, see method `setParams`
+    private class MyPurchasesUpdatedListener implements PurchasesUpdatedListener {
+        private PluginCall call;
+        private String productId;
+
+        public void setParams(PluginCall call, String productId) {
+            this.call = call;
+            this.productId = productId;
+        }
+
+        @Override
+        public void onPurchasesUpdated(BillingResult billingResult, List<Purchase> purchases) {
+            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
+                // Handle successful purchases here
+                Log.d(TAG, "Purchase successful...");
+
+                for (Purchase purchase : purchases) {
+                    // acknowledge purchase (see https://developer.android.com/google/play/billing/integrate?authuser=1&hl=fr#process)
+                    acknowledgePurchase(purchase);
+                }
+
+                JSObject ret = new JSObject();
+                ret.put("productId", this.productId);
+                ret.put("status", "active");
+                this.call.resolve(ret);
+        
+            } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
+                // Handle purchase cancellation
+                Log.d(TAG, "Purchase canceled...");
+                JSObject ret = new JSObject();
+                ret.put("productId", this.productId);
+                ret.put("status", "canceled");
+                this.call.resolve(ret);
+            } else {
+                // Handle other error cases
+                Log.d(TAG, "Purchase error: " + billingResult.getDebugMessage());
+                this.call.reject("Failed", billingResult.getDebugMessage());
+            }
+        }
+    }
+
     private void initializeBillingClient() {
         Log.d(TAG, "Initializing BillingClient...");
+        purchaseListener = new MyPurchasesUpdatedListener();
         billingClient = BillingClient.newBuilder(getContext())
             .enablePendingPurchases()
-            .setListener(new PurchasesUpdatedListener() {
-                @Override
-                public void onPurchasesUpdated(BillingResult billingResult, List<Purchase> purchases) {
-                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
-                        // Handle successful purchases here
-                        notifyPurchaseUpdate(purchases);
-                    } else if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.USER_CANCELED) {
-                        // Handle purchase cancellation
-                        notifyPurchaseCancel();
-                    } else {
-                        // Handle other error cases
-                        notifyPurchaseError(billingResult.getDebugMessage());
-                    }
-                }
-            })
+            // `purchaseListener` will send back results through `call` parameter, see method `setParams`
+            .setListener(purchaseListener)
             .build();
 
         // Connect to the Play Billing service
         billingClient.startConnection(new BillingClientStateListener() {
             @Override
             public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
-                Log.d(TAG, "onBillingSetupFinished... " + billingResult.getResponseCode() + " " + BillingClient.BillingResponseCode.OK);
+                Log.d(TAG, "onBillingSetupFinished... " + billingResult.getResponseCode() + " " + billingResult.getDebugMessage());
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                     // Billing client setup complete, ready for further actions
                     notifyBillingReady();
+                    isBillingReady_ = true;
+                } else {
+                    isBillingReady_ = false;
                 }
             }
 
@@ -93,6 +140,7 @@ public class InAppPurchasePlugin extends Plugin {
             public void onBillingServiceDisconnected() {
                 // Reconnect when the billing service is disconnected
                 Log.d(TAG, "onBillingServiceDisconnected...");
+                isBillingReady_ = false;
             }
         });
     }
@@ -105,30 +153,6 @@ public class InAppPurchasePlugin extends Plugin {
         notifyListeners("billingReady", ret);
     }
 
-    // Notify the JS layer about a purchase update
-    private void notifyPurchaseUpdate(List<Purchase> purchases) {
-        Log.d(TAG, "notifyPurchaseUpdate...");
-        JSObject ret = new JSObject();
-        ret.put("message", "Purchase successful");
-        notifyListeners("purchaseUpdate", ret);
-    }
-
-    // Notify about purchase cancellation
-    private void notifyPurchaseCancel() {
-        Log.d(TAG, "notifyPurchaseCancel...");
-        JSObject ret = new JSObject();
-        ret.put("message", "Purchase canceled");
-        notifyListeners("purchaseCancel", ret);
-    }
-
-    // Notify about purchase error
-    private void notifyPurchaseError(String error) {
-        Log.d(TAG, "notifyPurchaseError...");
-        JSObject ret = new JSObject();
-        ret.put("message", "Purchase error: " + error);
-        notifyListeners("purchaseError", ret);
-    }
-
     private void queryActiveSubscriptions(PluginCall call) {
         billingClient.queryPurchasesAsync(BillingClient.ProductType.SUBS, new PurchasesResponseListener() {
             @Override
@@ -137,7 +161,22 @@ public class InAppPurchasePlugin extends Plugin {
                     // Iterate through the list of purchases (active subscriptions)
                     Log.d(TAG, "purchases " + purchases.toString());
                     for (Purchase purchase : purchases) {
-                        checkSubscriptionStatus(purchase);
+                        if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                            // Subscription is active (purchased)
+                            if (!purchase.isAcknowledged()) {
+                                // Acknowledge the purchase if not acknowledged
+                                acknowledgePurchase(purchase);
+                            }
+                    
+                            // Here, you can check additional details, such as purchase time, order ID, etc.
+                            Log.d("BillingClient", "Subscription is active: " + purchase.getOrderId());
+                        } else if (purchase.getPurchaseState() == Purchase.PurchaseState.PENDING) {
+                            // Handle pending subscription
+                            Log.d("BillingClient", "Subscription is pending: " + purchase.getOrderId());
+                        } else {
+                            // Handle other states (expired, canceled, etc.)
+                            Log.d("BillingClient", "Subscription state: " + purchase.getPurchaseState());
+                        }
                     }
                 } else {
                     // Handle errors (e.g., no active subscriptions or failed query)
@@ -145,26 +184,6 @@ public class InAppPurchasePlugin extends Plugin {
                 }
             }
         });
-    }
-    
-    private void checkSubscriptionStatus(Purchase purchase) {
-        // Check if the subscription is acknowledged
-        if (purchase.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-            // Subscription is active (purchased)
-            if (!purchase.isAcknowledged()) {
-                // Acknowledge the purchase if not acknowledged
-                acknowledgePurchase(purchase);
-            }
-    
-            // Here, you can check additional details, such as purchase time, order ID, etc.
-            Log.d("BillingClient", "Subscription is active: " + purchase.getOrderId());
-        } else if (purchase.getPurchaseState() == Purchase.PurchaseState.PENDING) {
-            // Handle pending subscription
-            Log.d("BillingClient", "Subscription is pending: " + purchase.getOrderId());
-        } else {
-            // Handle other states (expired, canceled, etc.)
-            Log.d("BillingClient", "Subscription state: " + purchase.getPurchaseState());
-        }
     }
 
     private void acknowledgePurchase(Purchase purchase) {
@@ -183,6 +202,70 @@ public class InAppPurchasePlugin extends Plugin {
             }
         });
     }
+
+
+
+    private void querySubscriptionInfo(String productId, PluginCall call) {
+        List<QueryProductDetailsParams.Product> productList = new ArrayList<>();
+        productList.add(QueryProductDetailsParams.Product.newBuilder()
+            .setProductId(productId)
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build());
+
+        QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
+            .setProductList(productList)
+            .build();
+
+        billingClient.queryProductDetailsAsync(params, (billingResult, productDetailsList) -> {
+            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && productDetailsList != null) {
+                if (!productDetailsList.isEmpty()) {
+                    ProductDetails productDetails = productDetailsList.get(0);
+                    String name = productDetails.getName();
+                    String description = productDetails.getDescription();
+                    Log.d(TAG, "productDetails: " + productDetails.toString());
+                    Log.d(TAG, "name: " + name);
+                    Log.d(TAG, "description: " + description);
+
+                    // Extract the price details
+                    List<ProductDetails.SubscriptionOfferDetails> subscriptionOfferDetailsList = productDetails.getSubscriptionOfferDetails();
+                    // looks like only active offers are listed, so we take the first
+                    ProductDetails.SubscriptionOfferDetails selectedOffer = subscriptionOfferDetailsList.get(0);
+                    List<ProductDetails.PricingPhase> pricingPhases = selectedOffer.getPricingPhases().getPricingPhaseList();
+                    // look for the first active pricing plan
+                    ProductDetails.PricingPhase firstActivePricingPhase = pricingPhases.get(0);
+                    if (firstActivePricingPhase == null) {
+                        Log.e(TAG, "No active price phase found");
+                        call.reject("Failed", "No active price phase found");
+                    } else {
+                        // Extract price information
+                        String price = firstActivePricingPhase.getFormattedPrice(); // Human-readable price, e.g., "$9.99"
+                        String periodTag = firstActivePricingPhase.getBillingPeriod();
+                        String period = null;
+                        if (periodTag.equals("P1M")) period = "mois";
+                        if (periodTag.equals("P1Y")) period = "an"; 
+                        Log.d(TAG, "price: " + price);
+                        Log.d(TAG, "period: " + period);
+                        JSObject ret = new JSObject();
+                        ret.put("productId", productId);
+                        ret.put("name", name);
+                        ret.put("description", description);
+                        ret.put("price", price);
+                        ret.put("period", period);
+                        call.resolve(ret);
+                    }
+    
+                } else {
+                    Log.e(TAG, "No product details found for the subscription.");
+                    call.reject("Failed", "No product details found for the subscription.");
+                }
+            } else {
+                Log.e(TAG, "Failed to fetch product details: " + billingResult.getDebugMessage());
+                call.reject("Failed", "Failed to fetch product details: " + billingResult.getDebugMessage());
+            }
+        });
+    }
+
+
 
     private BillingResult queryAndBuySubscription(String productId, PluginCall call) {
         Log.d(TAG, "queryAndBuySubscription called with productId: " + productId);
@@ -219,13 +302,12 @@ public class InAppPurchasePlugin extends Plugin {
                 BillingFlowParams billingFlowParams = BillingFlowParams.newBuilder()
                     .setProductDetailsParamsList(productDetailsParamsList)
                     .build();
-                
+
+                // Set the arguments of the purchase listener so that it can send results through `call`
+                purchaseListener.setParams(call, productId);
+
                 // Launch the billing flow
                 BillingResult result = billingClient.launchBillingFlow(getActivity(), billingFlowParams);
-                JSObject ret = new JSObject();
-                ret.put("productId", productId);
-                ret.put("status", "active");
-                call.resolve(ret);
     
                 Log.d(TAG, "Purchase flow launched with result code: " + result.getResponseCode());
             } else {

@@ -15,8 +15,8 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
 
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "echo", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getSubscriptionProductInfo", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "buySubscription", returnType: CAPPluginReturnPromise),
-        // CAPPluginMethod(name: "getPurchases", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "checkSubscription", returnType: CAPPluginReturnPromise),
     ]
 
@@ -29,6 +29,44 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @available(iOS 15.0, *)
+    @objc func getSubscriptionProductInfo(_ call: CAPPluginCall) {
+        let productId = call.getString("productId") ?? ""
+        Task {
+            do {
+                let products = try await Product.products(for: [productId])
+                if (products.count == 1) {
+                    let product = products.first!
+                    print(product.displayName)
+                    print(product.description)
+                    print(product.displayPrice)
+                    let period: String
+                    switch (product.subscription?.subscriptionPeriod.unit) {
+                        case .month:
+                            period = "mois"
+                        case .year:
+                            period = "an"
+                        default:
+                            period = "--"
+                    }
+                    print(period)
+                    call.resolve([
+                        "productId": productId,
+                        "name": product.displayName,
+                        "description": product.description,
+                        "price": product.displayPrice,
+                        "period": period,
+                    ])
+
+                } else {
+                    call.reject("NotFound", "product not found")
+                }
+            } catch {
+                call.reject("Failed", error.localizedDescription)
+            }
+        }
+    }
+
+    @available(iOS 15.0, *)
     @objc func buySubscription(_ call: CAPPluginCall) {
         let productId = call.getString("productId") ?? ""
         Task {
@@ -38,7 +76,9 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                     let product = products.first!
                     print("prod", product.description, product.price, product)
 
+                    // PURCHASE
                     let result = try await product.purchase()
+
                     var revocationDate: Date? = nil
                     var expirationDate: Date? = nil
                     var status: String? = nil
@@ -128,7 +168,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
 
                     case .unverified(let unverifiedTransaction, let verificationError):
                         // jailbroken phone?
-                        print("unverified")
+                        print("Subscription is unverified")
                         status = "unverified"
                     }
                 }
@@ -138,7 +178,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                     "status": status,
                 ])
             } catch {
-                call.reject("Failed currentEntitlements", error.localizedDescription)
+                call.reject("Failed", error.localizedDescription)
             }
         }
     }
