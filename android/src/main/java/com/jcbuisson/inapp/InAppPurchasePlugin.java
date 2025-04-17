@@ -36,13 +36,6 @@ public class InAppPurchasePlugin extends Plugin {
         call.resolve(ret);
     }
         
-    @PluginMethod
-    public void isBillingReady(PluginCall call) {
-        JSObject ret = new JSObject();
-        ret.put("value", isBillingReady_);
-        call.resolve(ret);
-    }
-        
     // Get info from a subscription (price, etc.)
     @PluginMethod
     public void getSubscriptionProductInfo(PluginCall call) {
@@ -68,7 +61,6 @@ public class InAppPurchasePlugin extends Plugin {
 
     private BillingClient billingClient;
     private MyPurchasesUpdatedListener purchaseListener;
-    private boolean isBillingReady_ = false;
     
     private static final String TAG = "Capacitor";  // Define a tag for logging
 
@@ -130,9 +122,6 @@ public class InAppPurchasePlugin extends Plugin {
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
                     // Billing client setup complete, ready for further actions
                     notifyBillingReady();
-                    isBillingReady_ = true;
-                } else {
-                    isBillingReady_ = false;
                 }
             }
 
@@ -140,7 +129,6 @@ public class InAppPurchasePlugin extends Plugin {
             public void onBillingServiceDisconnected() {
                 // Reconnect when the billing service is disconnected
                 Log.d(TAG, "onBillingServiceDisconnected...");
-                isBillingReady_ = false;
             }
         });
     }

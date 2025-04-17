@@ -10,7 +10,6 @@ export interface InAppPurchasePlugin {
   //   listenerFunc: (code: { type: number }) => void,
   // ): Promise<PluginListenerHandle> & PluginListenerHandle;
 
-  isBillingReady(): Promise<{ value: boolean }>;
 
   // return information on an inapp product of type subscription
   // {

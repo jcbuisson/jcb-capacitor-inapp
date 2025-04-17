@@ -9,13 +9,6 @@ export class InAppPurchaseWeb extends WebPlugin implements InAppPurchasePlugin {
       return options
    }
 
-   async isBillingReady(): Promise<{ value: boolean }> {
-      console.log('*** isBillingReady')
-      return {
-         value: true
-      }
-   }
-
    async getSubscriptionProductInfo(options: { productId: string }): Promise<{ value: string }> {
       console.log('*** getSubscriptionProductInfo', options)
       return {
