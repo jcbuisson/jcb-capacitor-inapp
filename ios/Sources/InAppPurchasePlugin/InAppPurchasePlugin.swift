@@ -51,6 +51,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
                     print(period)
                     call.resolve([
                         "productId": productId,
+                        "platform": "ios",
                         "name": product.displayName,
                         "description": product.description,
                         "price": product.displayPrice,
@@ -126,6 +127,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
 
                     call.resolve([
                         "productId": productId,
+                        "platform": "ios",
                         "status": status,
                     ])
                 } else {
@@ -175,6 +177,7 @@ public class InAppPurchasePlugin: CAPPlugin, CAPBridgedPlugin {
 
                 call.resolve([
                     "productId": productId,
+                    "platform": "ios",
                     "status": status,
                 ])
             } catch {

@@ -87,6 +87,7 @@ public class InAppPurchasePlugin extends Plugin {
 
                 JSObject ret = new JSObject();
                 ret.put("productId", this.productId);
+                ret.put("platform", "android");
                 ret.put("status", "active");
                 this.call.resolve(ret);
         
@@ -95,6 +96,7 @@ public class InAppPurchasePlugin extends Plugin {
                 Log.d(TAG, "Purchase canceled...");
                 JSObject ret = new JSObject();
                 ret.put("productId", this.productId);
+                ret.put("platform", "android");
                 ret.put("status", "canceled");
                 this.call.resolve(ret);
             } else {
@@ -235,6 +237,7 @@ public class InAppPurchasePlugin extends Plugin {
                         Log.d(TAG, "period: " + period);
                         JSObject ret = new JSObject();
                         ret.put("productId", productId);
+                        ret.put("platform", "android");
                         ret.put("name", name);
                         ret.put("description", description);
                         ret.put("price", price);
